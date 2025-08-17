@@ -26,10 +26,10 @@ def load_or_create_sample_data():
     try:
         # Try to load existing data
         df = pd.read_csv('labeled_data.csv')
-        print(f"✅ Loaded existing dataset: {df.shape}")
+        print(f"Loaded existing dataset: {df.shape}")
         return df
     except FileNotFoundError:
-        print("📁 No existing dataset found. Creating sample data...")
+        print("No existing dataset found. Creating sample data...")
         
         # Create sample dataset for demonstration
         sample_texts = [
@@ -83,7 +83,7 @@ def load_or_create_sample_data():
         
         # Save sample data
         df.to_csv('labeled_data.csv', index=False)
-        print(f"✅ Created sample dataset: {df.shape}")
+        print(f"Created sample dataset: {df.shape}")
         
         return df
 
@@ -93,7 +93,7 @@ def explore_data(df):
     Explore and visualize the dataset.
     """
     print("\n" + "="*60)
-    print("📊 DATA EXPLORATION")
+    print("DATA EXPLORATION")
     print("="*60)
     
     # Basic info
@@ -151,10 +151,15 @@ def demonstrate_preprocessing(df):
     Demonstrate text preprocessing capabilities.
     """
     print("\n" + "="*60)
-    print("🔧 TEXT PREPROCESSING DEMONSTRATION")
+    print("TEXT PREPROCESSING DEMONSTRATION")
     print("="*60)
     
-    # Initialize preprocessors
+    # Show original texts
+    print("\nOriginal texts:")
+    for i, text in enumerate(df['text'].head(5), 1):
+        print(f"{i}. {text}")
+    
+    # Basic preprocessing
     basic_preprocessor = TextPreprocessor(
         remove_stopwords=True,
         lemmatize=True,
@@ -162,6 +167,7 @@ def demonstrate_preprocessing(df):
         remove_punctuation=True
     )
     
+    # Advanced preprocessing with emoji removal
     advanced_preprocessor = AdvancedTextPreprocessor(
         remove_stopwords=True,
         lemmatize=True,
@@ -169,34 +175,20 @@ def demonstrate_preprocessing(df):
         remove_punctuation=True
     )
     
-    # Sample texts for demonstration
-    sample_texts = df['text'].head(5).tolist()
+    # Process texts
+    basic_processed = basic_preprocessor.fit_transform(df['text'].head(5))
+    advanced_processed = advanced_preprocessor.fit_transform(df['text'].head(5))
     
-    print("📝 Original texts:")
-    for i, text in enumerate(sample_texts, 1):
-        print(f"{i}. {text}")
-    
-    print("\n🧹 Basic preprocessing results:")
-    basic_processed = basic_preprocessor.fit_transform(sample_texts)
-    for i, (original, processed) in enumerate(zip(sample_texts, basic_processed), 1):
+    print("\nAdvanced preprocessing results (with emoji removal):")
+    for i, (original, processed) in enumerate(zip(df['text'].head(5), advanced_processed), 1):
         print(f"{i}. Original: {original}")
         print(f"   Processed: {processed}")
         print()
     
-    print("🚀 Advanced preprocessing results:")
-    advanced_processed = advanced_preprocessor.fit_transform(sample_texts)
-    for i, (original, processed) in enumerate(zip(sample_texts, advanced_processed), 1):
-        print(f"{i}. Original: {original}")
-        print(f"   Processed: {processed}")
-        print()
-    
-    # Get vocabulary statistics
-    basic_vocab = basic_preprocessor.get_vocabulary(df['text'])
-    advanced_vocab = advanced_preprocessor.get_vocabulary(df['text'])
-    
-    print(f"📊 Vocabulary comparison:")
-    print(f"Basic preprocessing vocabulary size: {len(basic_vocab)}")
-    print(f"Advanced preprocessing vocabulary size: {len(advanced_vocab)}")
+    # Compare vocabulary sizes
+    print(f"Vocabulary comparison:")
+    print(f"  Basic preprocessing: {len(basic_preprocessor.get_vocabulary(df['text']))} words")
+    print(f"  Advanced preprocessing: {len(advanced_preprocessor.get_vocabulary(df['text']))} words")
     
     # Get text statistics
     basic_stats = basic_preprocessor.get_text_statistics(df['text'])
@@ -212,12 +204,8 @@ def train_single_classifier(df, preprocessor):
     Train a single text classifier and demonstrate its capabilities.
     """
     print("\n" + "="*60)
-    print("🤖 SINGLE CLASSIFIER TRAINING")
+    print("TRAINING CLASSIFIER")
     print("="*60)
-    
-    # Prepare data
-    texts = df['text']
-    labels = df['label']
     
     # Initialize classifier
     classifier = TextClassifier(
@@ -226,25 +214,25 @@ def train_single_classifier(df, preprocessor):
         random_state=42
     )
     
-    print("🚀 Training classifier...")
-    metrics = classifier.train(texts, labels, test_size=0.2)
+    # Train the model
+    print("Training classifier...")
+    metrics = classifier.train(df['text'], df['label'], test_size=0.3)
     
-    print(f"\n✅ Training completed!")
-    print(f"📊 Performance metrics:")
+    print(f"\nTraining completed!")
+    print(f"Performance metrics:")
     for metric, value in metrics.items():
         print(f"  {metric}: {value:.4f}")
     
-    # Make predictions on new examples
-    print(f"\n🔮 Making predictions on new examples:")
-    test_examples = [
-        "This is absolutely fantastic!",
+    # Make predictions
+    print(f"\nMaking predictions on new examples:")
+    new_examples = [
+        "This product is absolutely fantastic!",
         "Terrible experience, very poor quality.",
-        "The product is okay, nothing special.",
-        "Outstanding service and amazing results!",
-        "Disappointing performance, waste of money."
+        "The service was decent, could be better.",
+        "Amazing results, exceeded all expectations!"
     ]
     
-    for example in test_examples:
+    for example in new_examples:
         prediction = classifier.predict(example)
         probabilities = classifier.predict_proba(example)
         
@@ -270,26 +258,23 @@ def train_ensemble_classifier(df, preprocessor):
     Train an ensemble classifier and compare with single classifier.
     """
     print("\n" + "="*60)
-    print("🎯 ENSEMBLE CLASSIFIER TRAINING")
+    print("ENSEMBLE CLASSIFIER TRAINING")
     print("="*60)
     
-    # Prepare data
-    texts = df['text']
-    labels = df['label']
-    
     # Initialize ensemble classifier
-    ensemble = EnsembleTextClassifier(
+    ensemble_classifier = EnsembleTextClassifier(
         vectorizer_type='tfidf',
-        voting_method='soft',
+        classifiers=['logistic_regression', 'random_forest', 'svm'],
         random_state=42
     )
     
-    print("🚀 Training ensemble classifier...")
-    metrics = ensemble.train(texts, labels, test_size=0.2)
+    # Train ensemble
+    print("Training ensemble classifier...")
+    ensemble_metrics = ensemble_classifier.train(df['text'], df['label'], test_size=0.3)
     
-    print(f"\n✅ Ensemble training completed!")
-    print(f"📊 Performance metrics:")
-    for metric, value in metrics.items():
+    print(f"\nEnsemble training completed!")
+    print(f"Performance metrics:")
+    for metric, value in ensemble_metrics.items():
         print(f"  {metric}: {value:.4f}")
     
     # Make predictions
@@ -301,11 +286,11 @@ def train_ensemble_classifier(df, preprocessor):
     ]
     
     for example in test_examples:
-        prediction = ensemble.predict(example)
+        prediction = ensemble_classifier.predict(example)
         print(f"\nText: '{example}'")
         print(f"Prediction: {prediction}")
     
-    return ensemble
+    return ensemble_classifier
 
 
 def compare_all_classifiers(df):
@@ -320,11 +305,11 @@ def compare_all_classifiers(df):
     texts = df['text']
     labels = df['label']
     
-    print("🔄 Comparing multiple classifiers...")
+    print("Comparing multiple classifiers...")
     comparison_results = compare_classifiers(texts, labels, test_size=0.2, random_state=42)
     
     # Display results
-    print(f"\n📊 Comparison Results:")
+    print(f"\nComparison Results:")
     print("-" * 50)
     
     results_data = []
@@ -385,7 +370,7 @@ def demonstrate_hyperparameter_tuning(df):
     Demonstrate hyperparameter tuning capabilities.
     """
     print("\n" + "="*60)
-    print("🔧 HYPERPARAMETER TUNING DEMONSTRATION")
+    print("HYPERPARAMETER TUNING DEMONSTRATION")
     print("="*60)
     
     # Prepare data
@@ -406,7 +391,7 @@ def demonstrate_hyperparameter_tuning(df):
         'classifier__solver': ['liblinear', 'saga']
     }
     
-    print("🔍 Performing hyperparameter tuning...")
+    print("Performing hyperparameter tuning...")
     print(f"Parameter grid: {param_grid}")
     
     try:
@@ -414,22 +399,22 @@ def demonstrate_hyperparameter_tuning(df):
             texts, labels, param_grid, cv=3
         )
         
-        print(f"\n✅ Hyperparameter tuning completed!")
-        print(f"🎯 Best parameters: {tuning_results['best_params']}")
-        print(f"🏆 Best cross-validation score: {tuning_results['best_score']:.4f}")
+        print(f"\nHyperparameter tuning completed!")
+        print(f"Best parameters: {tuning_results['best_params']}")
+        print(f"Best cross-validation score: {tuning_results['best_score']:.4f}")
         
         # Retrain with best parameters
-        print("\n🚀 Retraining with best parameters...")
-        final_metrics = classifier.train(texts, labels, test_size=0.2)
+        print("\nRetraining with best parameters...")
+        final_metrics = classifier.train(texts, labels, test_size=0.3)
         
-        print(f"📊 Final performance metrics:")
+        print(f"Final performance metrics:")
         for metric, value in final_metrics.items():
             print(f"  {metric}: {value:.4f}")
         
         return classifier
         
     except Exception as e:
-        print(f"❌ Hyperparameter tuning failed: {e}")
+        print(f"Hyperparameter tuning failed: {e}")
         return None
 
 
@@ -456,9 +441,9 @@ try:
     vectorizer = model_data['vectorizer']
     label_encoder = model_data['label_encoder']
     preprocessor = model_data['preprocessor']
-    print("✅ Model loaded successfully!")
+    print("Model loaded successfully!")
 except Exception as e:
-    print(f"❌ Error loading model: {e}")
+    print(f"Error loading model: {e}")
     classifier = None
 
 @app.route('/')
